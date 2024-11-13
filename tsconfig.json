@@ -1,0 +1,29 @@
+{
+	"compilerOptions": {
+		"lib": [
+			"ESNext"
+		],
+		"types": [
+			"bun-types"
+		],
+		"baseUrl": "",
+		"module": "ESNext",
+		"target": "ESNext",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"noEmit": true,
+		"composite": true,
+		"strict": true,
+		"downlevelIteration": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"paths": {
+			"@/*": [
+				"src/*"
+			]
+		}
+	},
+	"include": [
+		"./src/**/*"
+	]
+}
