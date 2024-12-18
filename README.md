@@ -106,12 +106,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 Made with ❤️ by [f4id](https://github.com/f4id)
-### Explanation of Key Sections:
-
-- **Installation**: This section details how to clone the repository, install dependencies with Bun, and set up the `.env` file for the Discord bot token.
-- **Running the Bot**: The `bun start` command runs the bot, and `bun dev` is suggested for development mode with auto-reloading.
-- **Directory Structure**: Gives an overview of the project structure for easier navigation.
-- **Configuring the Bot**: Describes where and how to set up environment variables and how the bot handles command registration and events.
-- **Adding New Commands**: Instructions for adding new commands by creating a new file in the `/src/commands` folder and implementing the necessary class methods.
-
-This README should make it easy for others (and yourself) to get started with your bot template on GitHub. Let me know if you'd like any further adjustments!
