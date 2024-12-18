@@ -8,14 +8,26 @@ import Command from "./Command";
 import path from "path";
 import fs from "fs";
 
-/** Utility class for handling command interactions. */
+/**
+ * Utility class for handling command interactions in the Discord bot.
+ * 
+ * This class is responsible for caching, publishing, and executing commands.
+ * It handles both global and guild-specific commands and provides methods
+ * to manage command interactions, including autocomplete functionality.
+ */
 export default class CommandManager {
     /** Cached global commands mapped by their names. */
     private static _globalCommands = new Collection<string, Command<CommandInteraction>>();
+
     /** Cached guild commands mapped by their guild's ID. */
     private static _guildCommands = new Collection<Snowflake, Collection<string, Command<CommandInteraction>>>();
 
-    /** Caches all commands from the commands directory. */
+    /**
+     * Caches all commands from the commands directory.
+     * 
+     * This method imports command modules, verifies they are instances of the `Command` class,
+     * and caches them either globally or by guild ID.
+     */
     static async cache(): Promise<void> {
         const dirpath = path.resolve("src/commands");
 
@@ -33,12 +45,10 @@ export default class CommandManager {
             for (const filename of filenames) {
                 const filepath = path.resolve(dirpath, filename);
 
-                // Import and initiate the command
                 const commandModule = await import(filepath);
                 const commandClass = commandModule.default;
                 const command = new commandClass();
 
-                // Ensure the command is an instance of the Command class
                 if (!(command instanceof Command)) {
                     continue;
                 }
@@ -49,13 +59,11 @@ export default class CommandManager {
                     for (const guildId of command.guildIds) {
                         let guildCommands = CommandManager._guildCommands.get(guildId);
 
-                        // Initialize the guild's command collection if it doesn't exist
                         if (!guildCommands) {
                             guildCommands = new Collection<string, Command<CommandInteraction>>();
                             CommandManager._guildCommands.set(guildId, guildCommands);
                         }
 
-                        // Append the command to the guild's command collection
                         guildCommands.set(command.data.name, command);
 
                         Logger.log(`GUILD: ${guildId}`, logMessage, {
@@ -85,13 +93,17 @@ export default class CommandManager {
         Logger.info(`Cached ${commandCount} ${pluralize(commandCount, "command")}`);
     }
 
-    /** Publish all cached commands to Discord. */
+    /**
+     * Publishes all cached commands to Discord.
+     * 
+     * This method publishes both global and guild-specific commands to Discord's API.
+     * It ensures that the commands are properly set for each guild and globally.
+     */
     static async publish(): Promise<void> {
         Logger.info("Publishing commands...");
 
         const logMessage = (commandCount: number) => `Published ${commandCount} ${pluralize(commandCount, "command")}`;
 
-        // Publish guild commands
         for (const [guildId, guildCommands] of CommandManager._guildCommands) {
             const guild = await client.guilds.fetch(guildId).catch(cause => {
                 throw new BaseError(`Failed to fetch guild while publishing commands [ID: ${guildId}]`, {
@@ -100,7 +112,6 @@ export default class CommandManager {
                 });
             });
 
-            // Retrieve all cached guild commands and build them
             const commands = guildCommands.map(command => command.build());
             const publishedCommands = await guild.commands.set(commands);
 
@@ -115,11 +126,8 @@ export default class CommandManager {
             });
         }
 
-        // Publish global commands
-        // Retrieve all cached global commands and build them
         const globalCommands = CommandManager._globalCommands.map(command => command.build());
 
-        // No commands to publish
         if (!globalCommands.length) return;
 
         const publishedCommands = await client.application.commands.set(globalCommands);
@@ -138,7 +146,14 @@ export default class CommandManager {
         Logger.info("Finished publishing commands");
     }
 
-    /** Handles a command interaction. */
+    /**
+     * Handles a command interaction by retrieving the command and executing it.
+     * 
+     * This method is triggered when a user interacts with a slash command.
+     * It retrieves the relevant command and calls its `execute` method.
+     * 
+     * @param interaction The command interaction to handle.
+     */
     static async handleCommand(interaction: CommandInteraction): Promise<void> {
         const command = await CommandManager._get(
             interaction.commandId,
@@ -153,7 +168,14 @@ export default class CommandManager {
         await command.execute(interaction);
     }
 
-    /** Handles an autocomplete interaction. */
+    /**
+     * Handles an autocomplete interaction by retrieving the command and calling its `autocomplete` method.
+     * 
+     * This method is triggered when a user interacts with a command's autocomplete feature.
+     * It ensures that the command has an `autocomplete` method before calling it.
+     * 
+     * @param interaction The autocomplete interaction to handle.
+     */
     static async handleAutocomplete(interaction: AutocompleteInteraction): Promise<void> {
         const command = await CommandManager._get(
             interaction.commandId,
@@ -174,11 +196,13 @@ export default class CommandManager {
     }
 
     /**
-     * Retrieves a command by its name.
-     *
+     * Retrieves a command by its ID and name for either a global or guild-specific command.
+     * 
+     * This method is used to look up commands in the cache by their ID, name, and the guild they belong to.
+     * 
      * @param commandId The command's ID.
      * @param commandName The command's name.
-     * @param guildId The source guild's ID.
+     * @param guildId The ID of the guild the command was issued in, if applicable.
      * @private
      */
     private static async _get(

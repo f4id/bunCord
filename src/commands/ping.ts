@@ -1,7 +1,6 @@
 import Command from "@/handlers/commands/Command";
 import { SILENT_MESSAGE } from "@/utils/constants";
-import Logger from "@/utils/logger";
-import { ChatInputCommandInteraction } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction } from "discord.js";
 
 export default class PingCommand extends Command<ChatInputCommandInteraction> {
     constructor() {
@@ -12,18 +11,25 @@ export default class PingCommand extends Command<ChatInputCommandInteraction> {
     }
 
     async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        try {
-            const sent = await interaction.reply({ content: "Pinging...", fetchReply: true, flags: [SILENT_MESSAGE] });
-            
-            const latency = sent.createdTimestamp - interaction.createdTimestamp;
-            const apiLatency = Math.round(interaction.client.ws.ping);
+        const sent = await interaction.reply({
+            content: "Pinging...",
+            fetchReply: true,
+            flags: [SILENT_MESSAGE],
+            components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`pingCheck`)
+                        .setLabel("Check Latency")
+                        .setStyle(ButtonStyle.Primary)
+                )
+            ]
+        });
+        
+        const latency = sent.createdTimestamp - interaction.createdTimestamp;
+        const apiLatency = Math.round(interaction.client.ws.ping);
 
-            await interaction.editReply({
-                content: `🏓 Pong!\nLatency: ${latency}ms\nAPI Latency: ${apiLatency}ms`
-            });
-        } catch (err: any) {
-            Logger.error(`Failed to execute PingCommand: ${err.message}`);
-            await interaction.reply({ content: 'An error occurred while executing the command.', ephemeral: true });
-        }
+        await interaction.editReply({
+            content: `🏓 Pong!\nLatency: ${latency}ms\nAPI Latency: ${apiLatency}ms`
+        });
     }
 }

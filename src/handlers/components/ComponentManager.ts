@@ -6,12 +6,30 @@ import Logger from "@/utils/logger";
 import path from "path";
 import fs from "fs";
 
-/** Utility class for handling component interactions. */
+/**
+ * A utility class for managing component interactions in a Discord bot.
+ *
+ * This class is responsible for caching components and handling their interactions
+ * based on unique custom IDs.
+ */
 export default class ComponentManager {
-    /** Cached components mapped by their custom IDs. */
-    private static _cache = new Map<CustomID, Component>;
+    /**
+     * A cache that maps custom IDs to their corresponding {@link Component} instances.
+     * 
+     * This is used to efficiently retrieve and execute components during interactions.
+     * 
+     * @private
+     */
+    private static _cache = new Map<CustomID, Component>();
 
-    /** Caches all components from the components directory. */
+    /**
+     * Caches all components found in the `src/components` directory.
+     * 
+     * This method dynamically imports and initializes all component files, ensuring
+     * that only valid {@link Component} instances are added to the cache.
+     * 
+     * @throws {BaseError} If an error occurs while caching components.
+     */
     static async cache(): Promise<void> {
         const dirpath = path.resolve("src/components");
 
@@ -29,23 +47,20 @@ export default class ComponentManager {
             for (const filename of filenames) {
                 const filepath = path.resolve(dirpath, filename);
 
-                // Import and initiate the component
                 const componentModule = await import(filepath);
                 const componentClass = componentModule.default;
                 const component = new componentClass();
 
-                // Ensure the component is an instance of the Component class
                 if (!(component instanceof Component)) {
                     continue;
                 }
 
-                // Cache the component
                 ComponentManager._cache.set(component.customId, component);
 
                 Logger.log("GLOBAL", `Cached Component ${component.customId}`, {
                     color: Logger.Color.Magenta,
                     fullColor: true
-                })
+                });
 
                 componentCount++;
             }
@@ -61,8 +76,16 @@ export default class ComponentManager {
         Logger.info(`Cached ${componentCount} ${pluralize(componentCount, "component")}`);
     }
 
+    /**
+     * Handles an incoming component interaction.
+     * 
+     * This method retrieves the corresponding {@link Component} instance from the cache
+     * using the custom ID of the interaction and executes its logic.
+     * 
+     * @param interaction The interaction to handle.
+     * @throws {Error} If the component corresponding to the custom ID is not found.
+     */
     static async handle(interaction: ComponentInteraction): Promise<void> {
-        // Retrieve the component's instance from cache by its custom ID
         const component = ComponentManager._cache.get(interaction.customId);
 
         if (!component) {
